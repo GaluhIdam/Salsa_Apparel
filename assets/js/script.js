@@ -1,0 +1,1 @@
+console.log("Salsa Apparel berhasil dijalankan!");

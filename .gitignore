@@ -1,0 +1,22 @@
+# Environment
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_STORE
+thumbs.db
+
+# Logs
+*.log
+
+*.tmp
+
+# Upload files
+uploads/
+
+# PHP local
+test-db.php
