@@ -1,0 +1,11 @@
+# Apache: arahkan semua request non-file ke index.php. Document root harus public/.
+Options -Indexes
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]
+
+# Jangan sajikan file tersembunyi.
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
