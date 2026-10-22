@@ -9,7 +9,7 @@ cukup jalankan:
 docker compose up -d
 ```
 
-Buka http://localhost:8080. Image otomatis dibangun dari source (menggunakan
+Buka http://localhost:9123. Image otomatis dibangun dari source (menggunakan
 build cache), PostgreSQL disiapkan, migrasi dan seeder dijalankan, lalu PHP-FPM
 dan Nginx dinyalakan. Tidak perlu membuat file env atau memakai `--build`.
 Startup aplikasi berhenti jika migrasi atau seeder gagal.
@@ -60,7 +60,7 @@ harus memakai flag env yang sama jika menggunakan alternatif ini.
 Untuk VPS, isi `SALSA_DB_PASSWORD` dengan password kuat, set
 `SALSA_APP_ENV=production`, `SALSA_APP_DEBUG=false`, dan `SALSA_APP_URL` ke URL
 publik. Isi konfigurasi SMTP/Midtrans yang diperlukan. Default web terikat ke
-`127.0.0.1:8080`, cocok untuk reverse proxy HTTPS pada host. Untuk akses HTTP
+`127.0.0.1:9123`, cocok untuk reverse proxy HTTPS pada host. Untuk akses HTTP
 langsung, set `SALSA_HTTP_BIND=0.0.0.0` dan `SALSA_HTTP_PORT=80`; HTTPS perlu
 dikonfigurasi terpisah. PostgreSQL dan PHP-FPM tidak mengekspos port ke host.
 
