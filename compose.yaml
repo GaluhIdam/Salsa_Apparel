@@ -73,7 +73,7 @@ services:
       target: web
     restart: unless-stopped
     ports:
-      - "${SALSA_HTTP_BIND:-127.0.0.1}:${SALSA_HTTP_PORT:-9123}:80"
+      - "${SALSA_HTTP_BIND:-0.0.0.0}:${SALSA_HTTP_PORT:-9123}:80"
     volumes:
       - uploads:/var/www/html/public/uploads:ro
     depends_on:

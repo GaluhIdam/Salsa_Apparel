@@ -60,9 +60,11 @@ harus memakai flag env yang sama jika menggunakan alternatif ini.
 Untuk VPS, isi `SALSA_DB_PASSWORD` dengan password kuat, set
 `SALSA_APP_ENV=production`, `SALSA_APP_DEBUG=false`, dan `SALSA_APP_URL` ke URL
 publik. Isi konfigurasi SMTP/Midtrans yang diperlukan. Default web terikat ke
-`127.0.0.1:9123`, cocok untuk reverse proxy HTTPS pada host. Untuk akses HTTP
-langsung, set `SALSA_HTTP_BIND=0.0.0.0` dan `SALSA_HTTP_PORT=80`; HTTPS perlu
-dikonfigurasi terpisah. PostgreSQL dan PHP-FPM tidak mengekspos port ke host.
+`0.0.0.0:9123`, sehingga bisa diakses melalui `http://IP-SERVER:9123`.
+Set `SALSA_APP_URL=http://IP-SERVER:9123` atau domain publik agar tautan aplikasi
+memakai alamat yang benar. `0.0.0.0` adalah alamat bind; URL publik harus memakai
+IP/domain server. HTTPS perlu dikonfigurasi terpisah. PostgreSQL dan PHP-FPM
+tidak mengekspos port ke host.
 
 ### Perintah operasional
 
