@@ -1,0 +1,15 @@
+.git
+.agents
+.codex
+.aws
+.env
+.env.*
+**/.env
+**/.env.*
+vendor
+storage/**
+public/uploads/**
+patched
+tests
+node_modules
+*.log

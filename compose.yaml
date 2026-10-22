@@ -1,0 +1,71 @@
+name: salsa-apparel
+
+x-app: &app
+  image: salsa-apparel-php:local
+  build:
+    context: .
+    target: app
+  env_file:
+    - docker/.env
+  environment:
+    DB_HOST: db
+    DB_PORT: "5432"
+    DB_DATABASE: ${DB_DATABASE:-salsa_apparel}
+    DB_USERNAME: ${DB_USERNAME:-salsa_app}
+    DB_PASSWORD: ${DB_PASSWORD:?Isi DB_PASSWORD di docker/.env dan gunakan --env-file docker/.env}
+
+services:
+  db:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-salsa_apparel}
+      POSTGRES_USER: ${DB_USERNAME:-salsa_app}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Isi DB_PASSWORD di docker/.env dan gunakan --env-file docker/.env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  migrate:
+    <<: *app
+    restart: "no"
+    command: ["php", "scripts/migrate.php"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    <<: *app
+    restart: unless-stopped
+    volumes:
+      - uploads:/var/www/html/public/uploads
+      - storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    image: salsa-apparel-nginx:local
+    build:
+      context: .
+      target: web
+    restart: unless-stopped
+    ports:
+      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8080}:80"
+    volumes:
+      - uploads:/var/www/html/public/uploads:ro
+    depends_on:
+      app:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  uploads:
+  storage:
