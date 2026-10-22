@@ -1,4 +1,5 @@
 <?php
+
 /** @var array $user @var ?array $flash */
 $since = $user['created_at'] ? date('F Y', strtotime((string) $user['created_at'])) : '';
 $section = field_error('_section');
@@ -20,16 +21,29 @@ $section = field_error('_section');
             <section class="account-card" aria-labelledby="overview-title">
                 <h2 id="overview-title">Overview</h2>
                 <dl class="account-details">
-                    <div><dt>Name</dt><dd><?= e($user['full_name']) ?></dd></div>
-                    <div><dt>Email</dt><dd><?= e($user['email']) ?></dd></div>
-                    <div><dt>Phone</dt><dd><?= $user['phone'] ? e($user['phone']) : '—' ?></dd></div>
-                    <?php if ($since): ?><div><dt>Member since</dt><dd><?= e($since) ?></dd></div><?php endif; ?>
+                    <div>
+                        <dt>Name</dt>
+                        <dd><?= e($user['full_name']) ?></dd>
+                    </div>
+                    <div>
+                        <dt>Email</dt>
+                        <dd><?= e($user['email']) ?></dd>
+                    </div>
+                    <div>
+                        <dt>Phone</dt>
+                        <dd><?= $user['phone'] ? e($user['phone']) : '—' ?></dd>
+                    </div>
+                    <?php if ($since): ?><div>
+                            <dt>Member since</dt>
+                            <dd><?= e($since) ?></dd>
+                        </div><?php endif; ?>
                 </dl>
                 <p class="account-links">
                     <a class="text-link" href="<?= e(url('account/addresses')) ?>">Address book</a>
                     <a class="text-link" href="<?= e(url('wishlist')) ?>">My wishlist</a>
                     <a class="text-link" href="<?= e(url('cart')) ?>">Shopping bag</a>
                     <a class="text-link" href="<?= e(url('shop')) ?>">Continue shopping</a>
+                    <a class="text-link" href="<?= e(url('/account/orders')) ?>"> My Orders </a>
                 </p>
                 <form method="post" action="<?= e(url('logout')) ?>">
                     <?= csrf_field() ?>

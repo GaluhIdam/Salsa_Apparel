@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use App\Controllers\AccountController;
@@ -14,6 +15,7 @@ use App\Controllers\OrderStatusController;
 use App\Controllers\PageController;
 use App\Controllers\PasswordResetController;
 use App\Controllers\WishlistController;
+use App\Controllers\OrderHistoryController;
 use App\Core\Router;
 
 return static function (Router $r): void {
@@ -22,6 +24,7 @@ return static function (Router $r): void {
     $cart = new CartController();
     $auth = new AuthController();
     $account = new AccountController();
+    $orderHistory = new OrderHistoryController();
     $wishlist = new WishlistController();
     $pages = new PageController();
     $newsletter = new NewsletterController();
@@ -56,6 +59,8 @@ return static function (Router $r): void {
     $r->post('/register', fn() => $auth->register());
     $r->post('/logout', fn() => $auth->logout());
     $r->get('/account', fn() => $account->index());
+    // Riwayat transaksi pelanggan
+    $r->get('/account/orders',        fn() => $orderHistory->index());
     $r->post('/account/profile', fn() => $account->updateProfile());
     $r->post('/account/password', fn() => $account->changePassword());
     // Password reset
