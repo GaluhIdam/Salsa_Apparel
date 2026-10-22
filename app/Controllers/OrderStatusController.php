@@ -1,6 +1,5 @@
 
 <?php
-
 declare(strict_types=1);
 
 namespace App\Controllers;
@@ -71,7 +70,6 @@ final class OrderStatusController extends Controller
                 $orderId
             );
 
-            // Sinkronisasi dengan Midtrans jika pembayaran pending.
             if (
                 $order['payment_status'] === 'pending'
                 && is_array($payment)
@@ -86,42 +84,31 @@ final class OrderStatusController extends Controller
                     ?? 0
                 );
 
-                // Batasi request ke Midtrans setiap 15 detik.
                 if (time() - $lastSync >= 15) {
-                    $_SESSION['midtrans_last_sync'][$orderId] =
-                        time();
+                    $_SESSION['midtrans_last_sync'][$orderId] = time();
 
                     try {
-                        $service =
-                            new MidtransWebhookReconciliationService();
+                        $service = new MidtransWebhookReconciliationService();
 
-                        // Ambil status transaksi resmi dari Midtrans.
                         $service->synchronize(
                             $payment['provider_order_id']
                         );
 
-                        // Baca ulang order setelah sinkronisasi.
-                        $updatedOrder =
-                            $repository->findOrderForStatus(
-                                $pdo,
-                                $orderId,
-                                $accessToken
-                            );
+                        $updatedOrder = $repository->findOrderForStatus(
+                            $pdo,
+                            $orderId,
+                            $accessToken
+                        );
 
                         if ($updatedOrder !== null) {
                             $order = $updatedOrder;
                         }
 
-                        // Baca ulang data pembayaran.
-                        $payment =
-                            $repository->findLatestAttemptForOrder(
-                                $pdo,
-                                $orderId
-                            );
-
+                        $payment = $repository->findLatestAttemptForOrder(
+                            $pdo,
+                            $orderId
+                        );
                     } catch (Throwable $e) {
-                        // Jangan mengubah status menjadi paid
-                        // jika verifikasi Midtrans gagal.
                         error_log(
                             'Midtrans status sync failed: '
                             . $e->getMessage()
@@ -130,7 +117,6 @@ final class OrderStatusController extends Controller
                 }
             }
 
-            // Hapus throttle saat pembayaran sudah selesai.
             if ($order['payment_status'] !== 'pending') {
                 unset(
                     $_SESSION['midtrans_last_sync'][$orderId]
@@ -142,7 +128,6 @@ final class OrderStatusController extends Controller
                 'order' => $order,
                 'payment' => $payment,
             ]);
-
         } catch (Throwable $e) {
             error_log(
                 'Order status error: '
