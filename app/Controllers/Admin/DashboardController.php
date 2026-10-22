@@ -1,4 +1,6 @@
+
 <?php
+
 declare(strict_types=1);
 
 namespace App\Controllers\Admin;
@@ -15,26 +17,52 @@ final class DashboardController extends AdminController
         $stats = $pdo->query("
             SELECT
                 (SELECT COUNT(*) FROM users
-                WHERE role_id IS NULL) AS customers,
+                 WHERE role_id IS NULL) AS customers,
 
                 (SELECT COUNT(*) FROM products
-                WHERE status = 'active') AS products,
+                 WHERE status = 'active') AS products,
 
                 (SELECT COUNT(*) FROM orders) AS orders,
 
                 (SELECT COUNT(*) FROM orders
-                WHERE payment_status = 'paid') AS paid_orders,
+                 WHERE payment_status = 'pending') AS pending_payments,
+
+                (SELECT COUNT(*) FROM orders
+                 WHERE payment_status = 'paid') AS paid_orders,
+
+                (SELECT COUNT(*) FROM orders
+                 WHERE payment_status = 'failed') AS failed_orders,
+
+                (SELECT COUNT(*) FROM orders
+                 WHERE payment_status = 'expired') AS expired_orders,
+
+                (SELECT COUNT(*) FROM orders
+                 WHERE payment_status = 'refunded') AS refunded_orders,
 
                 (SELECT COALESCE(SUM(grand_total), 0)
-                FROM orders
-                WHERE payment_status = 'paid') AS revenue,
+                 FROM orders
+                 WHERE payment_status = 'paid') AS revenue,
 
                 (SELECT COUNT(*) FROM orders
-                WHERE payment_status = 'pending') AS pending_payments,
+                 WHERE fulfillment_status = 'unprocessed') AS unprocessed_orders,
 
                 (SELECT COUNT(*) FROM orders
-                WHERE fulfillment_status IN ('unprocessed', 'processing')
-                ) AS pending_fulfillment
+                 WHERE fulfillment_status = 'processing') AS processing_orders,
+
+                (SELECT COUNT(*) FROM orders
+                 WHERE fulfillment_status = 'shipped') AS shipped_orders,
+
+                (SELECT COUNT(*) FROM orders
+                 WHERE fulfillment_status = 'completed') AS completed_orders,
+
+                (SELECT COUNT(*) FROM orders
+                 WHERE fulfillment_status = 'cancelled') AS cancelled_orders,
+
+                (SELECT COUNT(*) FROM orders
+                 WHERE fulfillment_status IN (
+                     'unprocessed',
+                     'processing'
+                 )) AS pending_fulfillment
         ")->fetch();
 
         $sales = $pdo->query("
@@ -75,16 +103,23 @@ final class DashboardController extends AdminController
                 SUM(oi.quantity) AS units_sold,
                 SUM(oi.line_total) AS sales_total
             FROM order_items oi
-            INNER JOIN orders o ON o.id = oi.order_id
+            INNER JOIN orders o
+                ON o.id = oi.order_id
             WHERE o.payment_status = 'paid'
             GROUP BY oi.product_name
-            ORDER BY units_sold DESC, sales_total DESC
+            ORDER BY
+                units_sold DESC,
+                sales_total DESC
             LIMIT 5
         ")->fetchAll();
 
         $maxSales = 0;
+
         foreach ($sales as $sale) {
-            $maxSales = max($maxSales, (float) $sale['revenue']);
+            $maxSales = max(
+                $maxSales,
+                (float) $sale['revenue']
+            );
         }
 
         $this->render('admin/home', [
