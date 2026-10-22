@@ -18,8 +18,8 @@ $active = count(array_filter($items, static fn($i) => $i['available']));
 
         <?php if (!$items): ?>
             <div class="empty-state">
-                <h2>Your wishlist is empty</h2>
-                <p>Tap the heart on any product to save it here for later.</p>
+                <h2>Wishlist kamu kosong nih</h2>
+                <p>Tekan gambar hati di setiap produk untuk menyimpannya disini agar bisa dilihat nanti.</p>
                 <a class="btn btn--dark" href="<?= e(url('shop')) ?>">Continue shopping</a>
             </div>
         <?php else: ?>

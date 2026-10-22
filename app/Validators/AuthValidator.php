@@ -60,6 +60,19 @@ final class AuthValidator
         return [['current' => $current, 'new' => $new], $errors];
     }
 
+    /** @return array{0:string,1:array<string,string>} password baru untuk reset (tanpa password lama). */
+    public function newPassword(array $in): array
+    {
+        $errors = [];
+        $new = is_string($in['new_password'] ?? null) ? $in['new_password'] : '';
+        $confirm = is_string($in['new_password_confirmation'] ?? null) ? $in['new_password_confirmation'] : '';
+        $this->password($new, 'new_password', $errors);
+        if (!isset($errors['new_password']) && !hash_equals($new, $confirm)) {
+            $errors['new_password_confirmation'] = 'Passwords do not match.';
+        }
+        return [$new, $errors];
+    }
+
     /** Normalisasi email untuk pencarian dan rate limiting. */
     public static function normalizeEmail(string $email): string
     {

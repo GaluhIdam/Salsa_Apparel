@@ -1,10 +1,5 @@
 <?php
 declare(strict_types=1);
-// Uji alur HTTP autentikasi/akun (Phase 7) terhadap server yang sedang berjalan.
-//   Terminal 1: php -S localhost:8000 -t public public/index.php
-//   Terminal 2: php scripts/auth-http-check.php [http://localhost:8000]
-// Prasyarat: migrasi 003 & 004. Membuat akun uji phase7-test-*@example.invalid dan MENGHAPUSNYA (beserta
-// cart, wishlist, audit log, dan percobaan login uji) di akhir. Idle-timeout diuji di auth-check.php (CLI).
 require __DIR__ . '/../app/Core/Env.php';
 require __DIR__ . '/../app/Config/Database.php';
 App\Core\Env::load(__DIR__ . '/../.env');

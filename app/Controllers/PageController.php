@@ -11,6 +11,7 @@ final class PageController extends Controller
         'contact' => 'Contact Us', 'faq' => 'FAQ', 'shipping' => 'Shipping Information',
         'returns' => 'Returns & Exchanges', 'size-guide' => 'Size Guide', 'our-story' => 'Our Story',
         'privacy' => 'Privacy Policy', 'terms' => 'Terms & Conditions',
+        'support' => 'Contact Us',
     ];
 
     public function comingSoon(string $title, string $message = 'This page is being prepared and will be available soon.'): void
@@ -24,8 +25,29 @@ final class PageController extends Controller
             $this->notFound();
             return;
         }
+
+        if ($slug === 'our-story') {
+            $this->view('pages/our-story', [
+                'pageTitle' => 'About Salsa Apparel',
+            ]);
+            return;
+        }
+
+        if ($slug === 'contact') {
+            $this->view('pages/support', [
+                'pageTitle' => 'Contact Us',
+            ]);
+            return;
+        }
         $this->comingSoon(self::STATIC_PAGES[$slug]);
-    }
+
+        if ($slug === 'support') {
+            $this->view('pages/support', [
+                'pageTitle' => 'Contact Us',
+            ]);
+            return;
+        }
+}
 
     public function notFound(): void
     {

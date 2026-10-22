@@ -26,6 +26,7 @@ $section = field_error('_section');
                     <?php if ($since): ?><div><dt>Member since</dt><dd><?= e($since) ?></dd></div><?php endif; ?>
                 </dl>
                 <p class="account-links">
+                    <a class="text-link" href="<?= e(url('account/addresses')) ?>">Address book</a>
                     <a class="text-link" href="<?= e(url('wishlist')) ?>">My wishlist</a>
                     <a class="text-link" href="<?= e(url('cart')) ?>">Shopping bag</a>
                     <a class="text-link" href="<?= e(url('shop')) ?>">Continue shopping</a>

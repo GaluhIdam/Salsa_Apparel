@@ -1,22 +1,19 @@
-
 <?php /** @var array $navCategories */ ?>
 
 <section class="hero" aria-labelledby="hero-title">
-    <img
-        class="hero__image"
-        src="<?= e(image_url('assets/images/hero/hero.png')) ?>"
-        alt=""
+    <img class="hero__image" src="<?= e(image_url('assets/images/hero/hero3.png')) ?>"
+        alt="" 
         fetchpriority="high"
     >
 
     <div class="hero__inner">
         <div class="hero__copy">
             <h1 id="hero-title">
-                <?= e(setting('hero_headline', 'Style That Speaks for You.')) ?>
+                <?= e(setting('hero_headline', 'Good style, good feeling.')) ?>
             </h1>
 
             <p>
-                <?= e(setting('hero_subheadline', 'Everyday essentials, thoughtfully styled for every occasion.')) ?>
+                <?= e(setting('hero_subheadline', 'Temukan outfit favoritmu untuk setiap kesempatan.')) ?>
             </p>
 
             <a class="btn btn--accent" href="<?= e(url('shop')) ?>">

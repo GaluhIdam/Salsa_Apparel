@@ -37,7 +37,7 @@
                 <li class="is-sub"><a href="<?= e(url('category/' . $c['slug'])) ?>"><?= e($c['name']) ?></a></li>
             <?php endforeach; ?>
             <li><a href="<?= e(url('page/our-story')) ?>">About</a></li>
-            <li><a href="<?= e(url('page/contact')) ?>">Support</a></li>
+            <li><a href="<?= e(url('page/support')) ?>">Support</a></li>
         </ul>
     </div>
 </header>

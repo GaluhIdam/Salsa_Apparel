@@ -18,9 +18,14 @@ use App\Core\Router;
 try {
     $router = new Router();
     $router->setNotFound([new PageController(), 'notFound']);
+
     (require BASE_PATH . '/routes/web.php')($router);
+    (require BASE_PATH . '/routes/admin.php')($router);
+
     $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $_SERVER['REQUEST_URI'] ?? '/');
-} catch (Throwable $e) {
+} 
+
+catch (Throwable $e) {
     @file_put_contents(
         BASE_PATH . '/storage/logs/app.log',
         sprintf("[%s] %s: %s in %s:%d\n", date('c'), get_class($e), $e->getMessage(), $e->getFile(), $e->getLine()),

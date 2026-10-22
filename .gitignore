@@ -1,39 +1,8 @@
-# Environment / secrets
-.env
+﻿.env
 .env.*
 !.env.example
 
-# Dependencies, if used
 /vendor/
-/node_modules/
+/storage/logs/*
+!/storage/logs/.gitkeep
 
-# Logs and temporary files
-*.log
-*.tmp
-*.temp
-
-# Cache
-/cache/
-/tmp/
-
-# IDE
-.vscode/
-.idea/
-
-# OS files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Database backups only
-*.dump
-*.backup
-*.bak
-*.sql.gz
-
-# Test output
-/coverage/
-
-# Private keys
-*.pem
-*.key

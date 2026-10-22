@@ -3,7 +3,7 @@
 <section class="section" aria-labelledby="featured-title">
     <div class="container">
         <div class="section-head">
-            <h2 id="featured-title" class="section-title">Featured Collection</h2>
+            <h2 id="featured-title" class="section-title">Our Best Collection</h2>
             <a class="text-link" href="<?= e(url('shop')) ?>">View all <?= icon('arrow-right', 16) ?></a>
         </div>
         <div class="featured-grid">

@@ -9,7 +9,7 @@ $items = $cart['items'];
             <span aria-current="page">Shopping Bag</span>
         </nav>
         <header class="catalog-head">
-            <h1 class="section-title">Shopping Bag</h1>
+            <h1 class="section-title">Keranjang Belanja</h1>
             <?php if ($cart['units'] > 0): ?>
                 <p class="catalog-head__intro"><?= (int) $cart['units'] ?> <?= $cart['units'] === 1 ? 'item' : 'items' ?></p>
             <?php endif; ?>
@@ -22,8 +22,8 @@ $items = $cart['items'];
 
         <?php if (!$items): ?>
             <div class="empty-state">
-                <h2>Your bag is empty</h2>
-                <p>Looks like you haven't added anything yet. Discover everyday essentials made to move with you.</p>
+                <h2>Keranjang belanja anda kosong</h2>
+                <p>Anda belum menambahkan apapun. Ayo cari kebutuhan yang sesuai dengan gayamu.</p>
                 <a class="btn btn--dark" href="<?= e(url('shop')) ?>">Continue shopping</a>
             </div>
         <?php else: ?>
@@ -33,15 +33,39 @@ $items = $cart['items'];
                         <?php component('cart-item', ['item' => $item]); ?>
                     <?php endforeach; ?>
                 </ul>
+
                 <aside class="cart-summary" aria-label="Order summary">
                     <h2>Summary</h2>
+
                     <dl>
-                        <div><dt>Subtotal</dt><dd><?= e(rupiah($cart['subtotal'])) ?></dd></div>
-                        <div><dt>Shipping</dt><dd class="muted">Calculated at checkout</dd></div>
+                        <div>
+                            <dt>Subtotal</dt>
+                            <dd><?= e(rupiah($cart['subtotal'])) ?></dd>
+                        </div>
+                        <div>
+                            <dt>Shipping</dt>
+                            <dd class="muted">Calculated at checkout</dd>
+                        </div>
                     </dl>
-                    <p class="cart-summary__total"><span>Total</span><strong><?= e(rupiah($cart['subtotal'])) ?></strong></p>
-                    <p class="cart-summary__note">Checkout opens in a later release. Prices and stock are re-checked every time you open your bag.</p>
-                    <a class="btn btn--dark btn--block" href="<?= e(url('shop')) ?>">Continue shopping</a>
+
+                    <p class="cart-summary__total">
+                        <span>Total</span>
+                        <strong><?= e(rupiah($cart['subtotal'])) ?></strong>
+                    </p>
+
+                    <a class="btn btn--dark btn--block"
+                    href="<?= e(url('checkout')) ?>">
+                        Checkout
+                    </a>
+
+                    <p class="cart-summary__note">
+                        Shipping costs and stock availability will be confirmed at checkout.
+                    </p>
+
+                    <a class="btn btn--block"
+                    href="<?= e(url('shop')) ?>">
+                        Continue Shopping
+                    </a>
                 </aside>
             </div>
         <?php endif; ?>

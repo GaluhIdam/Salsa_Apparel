@@ -227,3 +227,49 @@
     });
   });
 })();
+
+document.addEventListener('DOMContentLoaded', () => {
+    const addressSelect = document.querySelector('#savedAddress');
+
+    if (!addressSelect) {
+        return;
+    }
+
+    const fields = {
+        recipientName: document.querySelector('#recipientName'),
+        recipientPhone: document.querySelector('#recipientPhone'),
+        address: document.querySelector('#shippingAddress'),
+        city: document.querySelector('#shippingCity'),
+        province: document.querySelector('#shippingProvince'),
+        postalCode: document.querySelector('#shippingPostalCode'),
+    };
+
+    addressSelect.addEventListener('change', () => {
+        const option = addressSelect.selectedOptions[0];
+
+        if (!option || !option.value) {
+            Object.values(fields).forEach((field) => {
+                if (field) {
+                    field.value = '';
+                }
+            });
+
+            return;
+        }
+
+        fields.recipientName.value = option.dataset.recipient || '';
+        fields.recipientPhone.value = option.dataset.phone || '';
+        fields.address.value = option.dataset.address || '';
+        fields.city.value = option.dataset.city || '';
+        fields.province.value = option.dataset.province || '';
+        fields.postalCode.value = option.dataset.postalCode || '';
+    });
+});
+
+/* Phase 8 — konfirmasi sebelum aksi destruktif (form dengan data-confirm) */
+document.addEventListener('submit', function (e) {
+  var form = e.target;
+  if (form && form.matches && form.matches('[data-confirm]') && !window.confirm(form.dataset.confirm)) {
+    e.preventDefault();
+  }
+});

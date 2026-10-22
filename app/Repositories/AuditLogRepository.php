@@ -8,11 +8,11 @@ use PDO;
 final class AuditLogRepository
 {
     /** $newValues hanya boleh berisi metadata non-sensitif (mis. nama field); jangan pernah password/token. */
-    public function log(?int $actorId, string $action, string $entityType, ?int $entityId, ?array $newValues, ?string $ip): void
+    public function log(?int $actorId, string $action, string $entityType, ?int $entityId, ?array $newValues, ?string $ip, ?array $oldValues = null): void
     {
         $st = Database::connection()->prepare(
-            'INSERT INTO audit_logs (actor_id, action, entity_type, entity_id, new_values, ip_address)
-             VALUES (:a, :act, :t, :e, CAST(:nv AS jsonb), CAST(:ip AS inet))'
+            'INSERT INTO audit_logs (actor_id, action, entity_type, entity_id, old_values, new_values, ip_address)
+            VALUES (:a, :act, :t, :e, CAST(:ov AS jsonb), CAST(:nv AS jsonb), CAST(:ip AS inet))'
         );
         $st->bindValue(':a', $actorId, $actorId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
         $st->bindValue(':act', $action);
@@ -20,6 +20,8 @@ final class AuditLogRepository
         $st->bindValue(':e', $entityId, $entityId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
         $json = $newValues === null ? null : json_encode($newValues, JSON_THROW_ON_ERROR);
         $st->bindValue(':nv', $json, $json === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $old = $oldValues === null ? null : json_encode($oldValues, JSON_THROW_ON_ERROR);
+        $st->bindValue(':ov', $old, $old === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $st->bindValue(':ip', $ip, $ip === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $st->execute();
     }

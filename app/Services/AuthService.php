@@ -60,7 +60,7 @@ final class AuthService
     }
 
     /** @return array{ok:bool,error:?string,locked:bool,user_id:?int} */
-    public function login(string $email, string $password, ?string $ip = null): array
+    public function login(string $email, string $password, ?string $ip = null, string $audience = 'customer'): array
     {
         $ip ??= self::clientIp();
         $identifier = $this->identifier($email);
@@ -74,9 +74,11 @@ final class AuthService
         $hash = $user['password_hash'] ?? self::dummyHash();
         // Password > 72 byte tidak mungkin tersimpan utuh; tolak, jangan biarkan bcrypt memotongnya diam-diam.
         $passwordOk = strlen($password) <= AuthValidator::PASSWORD_MAX_BYTES && password_verify($password, $hash);
+        // audience 'customer' (default, perilaku lama): hanya akun TANPA role. audience 'admin': hanya akun BER-role.
+        $roleOk = $audience === 'admin' ? ($user !== null && $user['role_id'] !== null) : ($user !== null && $user['role_id'] === null);
         $eligible = $user !== null
             && $this->truthy($user['is_active'])
-            && $user['role_id'] === null;
+            && $roleOk;
 
         if (!$passwordOk || !$eligible) {
             $this->users->recordFailure($identifier, $ip);

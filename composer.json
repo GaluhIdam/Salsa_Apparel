@@ -1,0 +1,13 @@
+{
+    "name": "salsa/apparel",
+    "type": "project",
+    "require": {
+        "midtrans/midtrans-php": "^2.6",
+        "phpmailer/phpmailer": "^7.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}
