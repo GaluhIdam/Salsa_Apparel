@@ -1,6 +1,7 @@
 <section class="order-status">
     <div class="container">
         <h1>Order Status</h1>
+        <?php component('flash-message', ['flash' => flash_get('order-status')]); ?>
 
         <?php if (!empty($loadError)): ?>
             <p>Status pesanan belum dapat dimuat. Silakan coba lagi.</p>
@@ -30,6 +31,9 @@
             <?php elseif ($order['payment_status'] === 'expired' || $order['payment_status'] === 'failed'): ?>
                 <p>Pembayaran berstatus <?= e($order['payment_status']) ?>. Silakan hubungi admin untuk bantuan.</p>
 
+            <?php elseif (strtotime((string) $order['payment_expires_at']) <= time()): ?>
+                <p>Batas waktu pembayaran sudah berakhir. Silakan hubungi admin untuk bantuan.</p>
+
             <?php elseif (($payment['snap_request_state'] ?? '') === 'completed' && !empty($payment['redirect_url'])): ?>
                 <p>Pesanan menunggu pembayaran.</p>
                 <p>
@@ -42,7 +46,11 @@
                 <p>Pembuatan pembayaran sedang diperiksa. Jangan membuat pembayaran baru dulu.</p>
 
             <?php else: ?>
-                <p>Status pembayaran sedang diproses. Silakan periksa kembali nanti.</p>
+                <p>Pesanan tersimpan dan menunggu pembayaran.</p>
+                <form method="post" action="/order-status/pay">
+                    <?= csrf_field() ?>
+                    <button class="btn btn--dark" type="submit">Lanjutkan pembayaran</button>
+                </form>
             <?php endif; ?>
         <?php endif; ?>
 

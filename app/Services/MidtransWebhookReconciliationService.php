@@ -53,6 +53,7 @@ final class MidtransWebhookReconciliationService
         $eventKey = substr(hash('sha256', implode('|', [
             $orderId,
             $providerStatus,
+            $fraudStatus,
             (string) ($status->status_code ?? ''),
             $transactionId ?? '',
         ])), 0, 64);
@@ -194,7 +195,7 @@ final class MidtransWebhookReconciliationService
                         'Status pembayaran diperbarui berdasarkan verifikasi Midtrans.'
                     );
 
-                if ($paymentStatus === 'expired') {
+                if (in_array($paymentStatus, ['expired', 'failed'], true)) {
                     $items = $pdo->prepare(
                         "SELECT variant_id, SUM(quantity)::int AS quantity
                         FROM order_items
@@ -235,7 +236,7 @@ final class MidtransWebhookReconciliationService
                             (variant_id, change_qty, reason, reference_type,
                             reference_id, note, created_at)
                         VALUES
-                            (:variant_id, :quantity, 'order_expired', 'order',
+                            (:variant_id, :quantity, :reason, 'order',
                             :order_id, :note, NOW())"
                     );
 
@@ -264,7 +265,8 @@ final class MidtransWebhookReconciliationService
                             'variant_id' => $variantId,
                             'quantity' => $quantity,
                             'order_id' => (int) $order['id'],
-                            'note' => 'Stok dipulihkan setelah status expired terverifikasi dari Midtrans.',
+                            'reason' => $paymentStatus === 'expired' ? 'order_expired' : 'order_cancelled',
+                            'note' => 'Stok dipulihkan setelah status ' . $paymentStatus . ' terverifikasi dari Midtrans.',
                         ]);
                     }
                 }

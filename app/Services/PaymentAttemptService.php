@@ -318,8 +318,10 @@ final class PaymentAttemptService
                             '/'
                         ) . '/order-status',
                     ],
-                    'custom_expiry' => [
-                        'expiry_duration' => 24,
+                    'expiry' => [
+                        // Anchor the deadline to the order, not payment-method selection.
+                        'start_time' => date('Y-m-d H:i:s O', strtotime((string) $order['payment_expires_at']) - 86400),
+                        'duration' => 24,
                         'unit' => 'hour',
                     ],
                 ],

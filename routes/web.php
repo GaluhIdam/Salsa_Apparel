@@ -88,6 +88,7 @@ return static function (Router $r): void {
 
 
     $r->get('/order-status', fn() => $orderStatus->show());
+    $r->post('/order-status/pay', fn() => $checkout->pay());
     //Midtrans
     $r->post(
         '/webhooks/midtrans',

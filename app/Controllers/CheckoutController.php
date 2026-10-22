@@ -65,6 +65,8 @@ final class CheckoutController extends Controller
         }
 
         try {
+            // Validate gateway configuration before reserving stock/clearing the cart.
+            $paymentService = new PaymentAttemptService();
             $result = (new CheckoutService())->createOrder(
                 ['email' => $_POST['email'] ?? ''],
                 [
@@ -86,32 +88,61 @@ final class CheckoutController extends Controller
                 'access_token' => $result['access_token'],
             ];
 
-            $payment = (new PaymentAttemptService())->startPayment(
+            $payment = $paymentService->startPayment(
                 (int) $result['order_id'],
                 $result['access_token']
             );
 
-        if (!empty($payment['redirect_url'])) {
-            header('Location: ' . $payment['redirect_url'], true, 303);
-            exit;
-        }
+            if (!empty($payment['redirect_url'])) {
+                header('Location: ' . $payment['redirect_url'], true, 303);
+                exit;
+            }
 
-        $this->redirect('/order-status');
+            $this->redirect('/order-status');
         } catch (DomainException $e) {
-            flash_set('checkout', 'error', $e->getMessage());
-            $this->redirect('/checkout');
+            flash_set(isset($result) ? 'order-status' : 'checkout', 'error', $e->getMessage());
+            $this->redirect(isset($result) ? '/order-status' : '/checkout');
             return;
         } catch (Throwable $e) {
             error_log('Checkout error: ' . $e->getMessage());
 
             flash_set(
-                'checkout',
+                isset($result) ? 'order-status' : 'checkout',
                 'error',
                 'Pesanan atau pembayaran belum dapat diproses. Periksa status pesanan sebelum mencoba kembali.'
             );
 
-            $this->redirect('/checkout');
+            $this->redirect(isset($result) ? '/order-status' : '/checkout');
             return;
+        }
+    }
+
+    public function pay(): void
+    {
+        if (!Csrf::verify($_POST['_csrf'] ?? null)) {
+            flash_set('order-status', 'error', 'Sesi kamu kedaluwarsa. Silakan coba lagi.');
+            $this->redirect('/order-status');
+            return;
+        }
+
+        $pending = $_SESSION['pending_order'] ?? null;
+        try {
+            if (!is_array($pending) || !is_int($pending['order_id'] ?? null)
+                || !is_string($pending['access_token'] ?? null)) {
+                throw new DomainException('Sesi akses pesanan sudah berakhir.');
+            }
+            // Continue the existing order; never reserve stock or create another order.
+            $payment = (new PaymentAttemptService())->startPayment(
+                $pending['order_id'], $pending['access_token']
+            );
+            header('Location: ' . $payment['redirect_url'], true, 303);
+            exit;
+        } catch (Throwable $e) {
+            error_log('Resume payment error: ' . $e->getMessage());
+            flash_set('order-status', 'error', $e instanceof DomainException
+                ? $e->getMessage()
+                : 'Pembayaran belum dapat dilanjutkan. Periksa kembali status pesanan atau hubungi admin.');
+            $this->redirect('/order-status');
         }
     }
 }

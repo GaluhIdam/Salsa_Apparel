@@ -52,12 +52,6 @@ final class MidtransService
                 'Konfigurasi Midtrans belum lengkap.'
             );
         }
-
-        if (!empty($midtrans['is_production'])) {
-            throw new RuntimeException(
-                'Service ini hanya boleh digunakan di Sandbox.'
-            );
-        }
     }
 
     /**
@@ -161,11 +155,15 @@ final class MidtransService
             Config::$clientKey =
                 $this->config['midtrans']['client_key'];
 
-            Config::$isProduction = false;
+            Config::$isProduction = (bool) ($this->config['midtrans']['is_production'] ?? false);
             Config::$paymentIdempotencyKey = $idempotencyKey;
 
             // Hindari membawa opsi request sebelumnya.
-            Config::$curlOptions = [];
+            Config::$curlOptions = [
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_HTTPHEADER => [],
+            ];
 
             return $callback();
         } finally {

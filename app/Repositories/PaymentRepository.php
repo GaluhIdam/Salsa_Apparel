@@ -492,15 +492,16 @@ final class PaymentRepository
              FROM order_status_history
              WHERE order_id = :order_id
              AND status_type = 'payment'
-             AND from_status = :status
-             AND to_status = :status
+             AND from_status = :from_status
+             AND to_status = :to_status
              AND note = :note
              LIMIT 1"
         );
 
         $check->execute([
             'order_id' => $orderId,
-            'status' => $orderStatus,
+            'from_status' => $orderStatus,
+            'to_status' => $orderStatus,
             'note' => $note,
         ]);
 

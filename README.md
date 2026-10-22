@@ -82,6 +82,48 @@ volume; `down -v` menghapusnya. Setelah kode berubah, jalankan kembali
 volume database dibuat tidak mengubah password PostgreSQL; ubah juga kredensial
 di PostgreSQL jika diperlukan.
 
+## Pembayaran Midtrans
+
+Isi `.env` Compose dengan kunci dari dashboard Midtrans untuk lingkungan yang
+sama. Contoh sandbox (ganti placeholder):
+
+```dotenv
+SALSA_APP_URL=https://toko.example.com
+SALSA_MIDTRANS_SERVER_KEY=isi_server_key_sandbox
+SALSA_MIDTRANS_CLIENT_KEY=isi_client_key_sandbox
+SALSA_MIDTRANS_IS_PRODUCTION=false
+```
+
+Untuk pembayaran sungguhan, gunakan kunci production dan set
+`SALSA_MIDTRANS_IS_PRODUCTION=true`. Jalankan `docker compose up -d` setelah
+mengubah konfigurasi. Jangan commit kunci ke Git.
+
+Di dashboard Midtrans untuk lingkungan yang dipilih, set **Payment Notification
+URL** ke `https://toko.example.com/webhooks/midtrans`. Endpoint harus menerima
+POST dari internet. Gunakan domain publik melalui HTTPS port 443 dengan reverse
+proxy ke aplikasi port 9123. Port web Docker tetap 9123; URL webhook publik
+memakai port standar 80/443, bukan `:9123`, sesuai
+[ketentuan notifikasi Midtrans](https://docs.midtrans.com/docs/https-notification-webhooks).
+
+Alur uji: tambah produk ke cart, checkout, selesaikan pembayaran melalui simulator
+sandbox Midtrans, lalu buka kembali `/order-status`. Status `paid` hanya berasal
+dari notifikasi yang signature, status API, dan nominalnya sudah diverifikasi;
+parameter redirect dari browser tidak dianggap sebagai bukti pembayaran.
+
+Jika pembayaran gagal dimulai setelah order tersimpan, halaman status tetap
+menampilkan order tersebut. Tombol lanjutkan memakai order/token yang sama;
+request dengan hasil tidak pasti (`unknown`) tetap perlu diperiksa agar tidak
+membuat pembayaran ganda. Lihat `docker compose logs --tail=100 app` untuk
+kesalahan gateway dan webhook.
+
+Tes regresi tanpa akses jaringan/database nyata:
+
+```sh
+php tests/midtrans-status-test.php
+php tests/payment-attempt-test.php
+php tests/payment-webhook-test.php
+```
+
 ## Migrasi database
 
 Siapkan database PostgreSQL dan isi konfigurasi `DB_*` pada `.env`.
