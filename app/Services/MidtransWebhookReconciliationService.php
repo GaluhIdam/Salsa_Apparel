@@ -1,3 +1,4 @@
+
 <?php
 
 declare(strict_types=1);
@@ -14,18 +15,40 @@ final class MidtransWebhookReconciliationService
     public function __construct(
         private readonly MidtransWebhookService $verifier = new MidtransWebhookService(),
         private readonly PaymentRepository $payments = new PaymentRepository(),
-    ) {
-    }
+    ) {}
 
     public function process(array $notification): void
     {
-        // Verifikasi signature dan ambil status resmi dari Midtrans.
         $status = $this->verifier->verifyAndFetchStatus($notification);
 
+        $this->processVerifiedStatus($status);
+    }
+
+    public function synchronize(string $providerOrderId): void
+    {
+        $status = (new MidtransService())
+            ->getTransactionStatus($providerOrderId);
+
+        if (
+            !isset($status->order_id)
+            || (string) $status->order_id !== $providerOrderId
+        ) {
+            throw new RuntimeException(
+                'Order ID dari Midtrans tidak cocok.'
+            );
+        }
+
+        $this->processVerifiedStatus($status);
+    }
+
+    private function processVerifiedStatus(object $status): void
+    {
         $orderId = (string) $status->order_id;
+
         $providerStatus = strtolower(
             (string) ($status->transaction_status ?? '')
         );
+
         $fraudStatus = strtolower(
             (string) ($status->fraud_status ?? '')
         );
@@ -47,7 +70,9 @@ final class MidtransWebhookReconciliationService
         );
 
         if (!is_array($payload)) {
-            throw new RuntimeException('Status transaksi tidak valid.');
+            throw new RuntimeException(
+                'Status transaksi tidak valid.'
+            );
         }
 
         $eventKey = substr(hash('sha256', implode('|', [
@@ -164,7 +189,6 @@ final class MidtransWebhookReconciliationService
                 );
             }
 
-            // Order pending dapat berubah jika transisi payment valid.
             if (
                 $currentOrderStatus === 'pending'
                 && $paymentStatus !== 'pending'
@@ -195,81 +219,109 @@ final class MidtransWebhookReconciliationService
                         'Status pembayaran diperbarui berdasarkan verifikasi Midtrans.'
                     );
 
-                if (in_array($paymentStatus, ['expired', 'failed'], true)) {
-                    $items = $pdo->prepare(
-                        "SELECT variant_id, SUM(quantity)::int AS quantity
-                        FROM order_items
-                        WHERE order_id = :order_id
-                        GROUP BY variant_id
-                        ORDER BY variant_id"
-                    );
-
-                    $items->execute(['order_id' => (int) $order['id']]);
-
-                    $itemRows = $items->fetchAll(\PDO::FETCH_ASSOC);
-
-                    if ($itemRows === []) {
-                        throw new RuntimeException(
-                            'Order tidak memiliki item untuk pemulihan stok.'
+                    if (in_array(
+                        $paymentStatus,
+                        ['expired', 'failed'],
+                        true
+                    )) {
+                        $items = $pdo->prepare(
+                            "SELECT
+                                variant_id,
+                                SUM(quantity)::int AS quantity
+                             FROM order_items
+                             WHERE order_id = :order_id
+                             GROUP BY variant_id
+                             ORDER BY variant_id"
                         );
-                    }
 
-                    foreach ($itemRows as $item) {
-                        if (
-                            $item['variant_id'] === null
-                            || (int) $item['quantity'] <= 0
-                        ) {
-                            throw new RuntimeException(
-                                'Item order tidak valid; pemulihan stok dibatalkan.'
-                            );
-                        }
-                    }
-
-                    $restoreStock = $pdo->prepare(
-                        "UPDATE product_variants
-                        SET stock = stock + :quantity
-                        WHERE id = :variant_id"
-                    );
-
-                    $movement = $pdo->prepare(
-                        "INSERT INTO inventory_movements
-                            (variant_id, change_qty, reason, reference_type,
-                            reference_id, note, created_at)
-                        VALUES
-                            (:variant_id, :quantity, :reason, 'order',
-                            :order_id, :note, NOW())"
-                    );
-
-                    foreach ($itemRows as $item) {
-                        $variantId = (int) $item['variant_id'];
-                        $quantity = (int) $item['quantity'];
-
-                        if ($quantity <= 0) {
-                            throw new RuntimeException(
-                                'Jumlah pemulihan stok tidak valid.'
-                            );
-                        }
-
-                        $restoreStock->execute([
-                            'quantity' => $quantity,
-                            'variant_id' => $variantId,
+                        $items->execute([
+                            'order_id' => (int) $order['id']
                         ]);
 
-                        if ($restoreStock->rowCount() !== 1) {
+                        $itemRows = $items->fetchAll(
+                            \PDO::FETCH_ASSOC
+                        );
+
+                        if ($itemRows === []) {
                             throw new RuntimeException(
-                                'Varian produk tidak ditemukan saat pemulihan stok.'
+                                'Order tidak memiliki item untuk pemulihan stok.'
                             );
                         }
 
-                        $movement->execute([
-                            'variant_id' => $variantId,
-                            'quantity' => $quantity,
-                            'order_id' => (int) $order['id'],
-                            'reason' => $paymentStatus === 'expired' ? 'order_expired' : 'order_cancelled',
-                            'note' => 'Stok dipulihkan setelah status ' . $paymentStatus . ' terverifikasi dari Midtrans.',
-                        ]);
+                        foreach ($itemRows as $item) {
+                            if (
+                                $item['variant_id'] === null
+                                || (int) $item['quantity'] <= 0
+                            ) {
+                                throw new RuntimeException(
+                                    'Item order tidak valid; pemulihan stok dibatalkan.'
+                                );
+                            }
+                        }
+
+                        $restoreStock = $pdo->prepare(
+                            "UPDATE product_variants
+                             SET stock = stock + :quantity
+                             WHERE id = :variant_id"
+                        );
+
+                        $movement = $pdo->prepare(
+                            "INSERT INTO inventory_movements
+                                (
+                                    variant_id,
+                                    change_qty,
+                                    reason,
+                                    reference_type,
+                                    reference_id,
+                                    note,
+                                    created_at
+                                )
+                             VALUES
+                                (
+                                    :variant_id,
+                                    :quantity,
+                                    :reason,
+                                    'order',
+                                    :order_id,
+                                    :note,
+                                    NOW()
+                                )"
+                        );
+
+                        foreach ($itemRows as $item) {
+                            $variantId = (int) $item['variant_id'];
+                            $quantity = (int) $item['quantity'];
+
+                            if ($quantity <= 0) {
+                                throw new RuntimeException(
+                                    'Jumlah pemulihan stok tidak valid.'
+                                );
+                            }
+
+                            $restoreStock->execute([
+                                'quantity' => $quantity,
+                                'variant_id' => $variantId,
+                            ]);
+
+                            if ($restoreStock->rowCount() !== 1) {
+                                throw new RuntimeException(
+                                    'Varian produk tidak ditemukan saat pemulihan stok.'
+                                );
+                            }
+
+                            $movement->execute([
+                                'variant_id' => $variantId,
+                                'quantity' => $quantity,
+                                'order_id' => (int) $order['id'],
+                                'reason' => $paymentStatus === 'expired'
+                                    ? 'order_expired'
+                                    : 'order_cancelled',
+                                'note' => 'Stok dipulihkan setelah status '
+                                    . $paymentStatus
+                                    . ' terverifikasi dari Midtrans.',
+                            ]);
+                        }
                     }
-                }
                 }
             } elseif (
                 in_array(
@@ -284,7 +336,6 @@ final class MidtransWebhookReconciliationService
                     true
                 )
             ) {
-                // Pembayaran terlambat tidak mengaktifkan order otomatis.
                 $this->payments->recordLatePaymentReviewOnce(
                     $pdo,
                     (int) $order['id'],
