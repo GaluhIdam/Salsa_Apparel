@@ -33,9 +33,16 @@ INSERT INTO categories (name, slug, description, sort_order) VALUES
  ('Shoes','shoes','Sepatu minimalis untuk setiap langkah.',7)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO shipping_rates (courier, service, cost, etd_text) VALUES
+INSERT INTO shipping_rates (courier, service, cost, etd_text)
+SELECT v.courier, v.service, v.cost, v.etd_text
+FROM (VALUES
  ('Kurir Reguler','Reguler',15000,'3-5 hari'),
  ('Kurir Express','Express',30000,'1-2 hari')
+) AS v(courier, service, cost, etd_text)
+WHERE NOT EXISTS (
+ SELECT 1 FROM shipping_rates s
+ WHERE s.courier = v.courier AND s.service = v.service
+)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO products (category_id, name, slug, short_description, description, price, status, is_new_arrival, is_best_seller, is_featured)

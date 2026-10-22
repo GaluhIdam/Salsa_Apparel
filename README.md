@@ -2,58 +2,83 @@
 
 ## Docker Compose
 
-Butuh Docker Engine / Docker Desktop dengan Compose v2. Jalankan dari folder
-proyek. Buat konfigurasi Docker terpisah dari `.env` lokal:
+Butuh Docker Engine / Docker Desktop dengan Compose v2. Dari folder hasil clone,
+cukup jalankan:
 
-```powershell
-Copy-Item docker/.env.example docker/.env
+```sh
+docker compose up -d
 ```
 
-Linux / VPS: `cp docker/.env.example docker/.env`.
-Ganti `DB_PASSWORD` pada `docker/.env`, lalu jalankan:
+Buka http://localhost:8080. Image otomatis dibangun dari source (menggunakan
+build cache), PostgreSQL disiapkan, migrasi dan seeder dijalankan, lalu PHP-FPM
+dan Nginx dinyalakan. Tidak perlu membuat file env atau memakai `--build`.
+Startup aplikasi berhenti jika migrasi atau seeder gagal.
 
-```powershell
-docker compose --env-file docker/.env up -d --build
+### Seeder otomatis
+
+`database/seed.sql` mengisi:
+
+- 3 role: `super_admin`, `admin`, `order_manager`.
+- 10 permission dan pembagian akses untuk ketiga role.
+- 7 kategori: Accessories, Men, Women, Hoodies, T-Shirts, Shirts, Shoes.
+- 2 tarif kirim: Reguler Rp15.000 dan Express Rp30.000.
+- 5 produk demo: Essential T-Shirt, Relaxed Fit Shirt, Everyday Hoodie,
+  Classic Sneakers, Minimalist Tote.
+- 17 varian produk: 12 varian pakaian dengan stok 20 per varian,
+  4 varian sepatu dengan stok 15 per varian, dan 1 tote dengan stok 25.
+- 4 pengaturan teks situs: announcement, headline, subheadline, dan tombol hero.
+
+Setelah seed, SQL `002_placeholder_images.sql` diterapkan kembali untuk mengisi
+placeholder kategori, produk, hero, dan editorial yang masih kosong.
+Seeder tidak membuat akun admin/pelanggan. Buat admin sendiri setelah startup:
+
+```sh
+docker compose exec --user www-data app php scripts/create-admin.php --email=admin@example.com --name="Admin Salsa"
 ```
 
-Buka http://localhost:8080. Compose menjalankan PostgreSQL, menunggu database
-siap, menjalankan CLI migrasi, lalu menyalakan PHP-FPM dan Nginx. Seed contoh
-tidak dijalankan otomatis. Container menggunakan database baru di volume Docker;
-data PostgreSQL lokal tidak otomatis dipindahkan. File `.env` dan upload lokal
-tidak disalin ke image.
+Seeder dicatat pada `schema_seeders` dan dilewati pada startup berikutnya agar
+tarif kirim tidak berlipat dan stok yang sudah berubah tidak direset. SQL tarif
+kirim juga memeriksa kombinasi kurir dan layanan agar data seed manual yang
+sudah ada tidak ditambahkan lagi. Backup database lama sebelum menjalankan seed.
 
-Perintah operasional:
+### Konfigurasi opsional
 
-```powershell
-docker compose --env-file docker/.env logs --tail=100 migrate app web
-docker compose --env-file docker/.env run --rm migrate php scripts/migrate.php --status
-docker compose --env-file docker/.env run --rm migrate
-docker compose --env-file docker/.env down
-```
+Default memakai database internal Docker dengan password development, email
+berupa log, dan kunci Midtrans kosong. Checkout pembayaran memerlukan kunci
+Midtrans yang valid. Data PostgreSQL dan upload lokal tidak otomatis dipindahkan.
 
-Database, upload, log, dan session disimpan dalam named volume. `down` menyimpan
-volume; `down -v` menghapus data tersebut. Jika kode berubah, jalankan kembali
-`up -d --build`. Gunakan selalu `--env-file docker/.env` agar konfigurasi
-database Compose sama dengan konfigurasi aplikasi. Setelah volume database
-dibuat, mengubah password di file env saja tidak mengubah password PostgreSQL;
-ubah juga kredensial di PostgreSQL jika diperlukan.
+Untuk mengganti default, salin `docker/.env.example` menjadi `.env` di root hasil
+clone, lalu sesuaikan variabel berawalan `SALSA_`. Jika `.env` lokal sudah ada,
+tambahkan variabel `SALSA_` yang dibutuhkan ke file tersebut tanpa menimpanya.
+Variabel `DB_*` / SMTP lokal tidak memengaruhi konfigurasi Docker. File env tidak
+dimasukkan ke image.
 
-Opsional, isi data contoh termasuk role admin (perintah PowerShell berikut memakai
-nama database dan user bawaan contoh env; sesuaikan jika diubah):
+Alternatif file terpisah: salin contoh ke `docker/.env`, lalu gunakan
+`docker compose --env-file docker/.env up -d`. Semua perintah Compose berikutnya
+harus memakai flag env yang sama jika menggunakan alternatif ini.
 
-```powershell
-Get-Content database/seed.sql -Raw | docker compose --env-file docker/.env exec -T db psql -U salsa_app -d salsa_apparel -v ON_ERROR_STOP=1
-docker compose --env-file docker/.env exec --user www-data app php scripts/create-admin.php --email=admin@example.com --name="Admin Salsa"
-```
-
-Di Linux, ganti `Get-Content database/seed.sql -Raw` dengan `cat database/seed.sql`.
-Jalankan seed contoh hanya jika memang menginginkan data demo pada database tersebut.
-
-Untuk VPS, set `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` ke URL publik,
-dan isi konfigurasi SMTP serta Midtrans sesuai lingkungan. Default port web hanya
-terikat ke `127.0.0.1`, cocok di belakang reverse proxy HTTPS pada host. Untuk
-akses HTTP langsung, set `HTTP_BIND=0.0.0.0` dan `HTTP_PORT=80`; HTTPS perlu
+Untuk VPS, isi `SALSA_DB_PASSWORD` dengan password kuat, set
+`SALSA_APP_ENV=production`, `SALSA_APP_DEBUG=false`, dan `SALSA_APP_URL` ke URL
+publik. Isi konfigurasi SMTP/Midtrans yang diperlukan. Default web terikat ke
+`127.0.0.1:8080`, cocok untuk reverse proxy HTTPS pada host. Untuk akses HTTP
+langsung, set `SALSA_HTTP_BIND=0.0.0.0` dan `SALSA_HTTP_PORT=80`; HTTPS perlu
 dikonfigurasi terpisah. PostgreSQL dan PHP-FPM tidak mengekspos port ke host.
+
+### Perintah operasional
+
+```sh
+docker compose logs --tail=100 migrate app web
+docker compose run --rm migrate php scripts/migrate.php --status
+docker compose run --rm migrate
+docker compose run --rm migrate php scripts/seed.php
+docker compose down
+```
+
+Database, upload, log, dan session tersimpan dalam named volume. `down` menyimpan
+volume; `down -v` menghapusnya. Setelah kode berubah, jalankan kembali
+`docker compose up -d` untuk membangun perubahan. Mengubah password env setelah
+volume database dibuat tidak mengubah password PostgreSQL; ubah juga kredensial
+di PostgreSQL jika diperlukan.
 
 ## Migrasi database
 

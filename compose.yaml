@@ -2,26 +2,40 @@ name: salsa-apparel
 
 x-app: &app
   image: salsa-apparel-php:local
+  pull_policy: build
   build:
     context: .
     target: app
-  env_file:
-    - docker/.env
   environment:
+    APP_ENV: ${SALSA_APP_ENV:-local}
+    APP_DEBUG: ${SALSA_APP_DEBUG:-false}
+    APP_URL: ${SALSA_APP_URL:-http://localhost:8080}
+    SESSION_NAME: salsa_session
+    MAIL_DRIVER: ${SALSA_MAIL_DRIVER:-log}
+    MAIL_FROM_ADDRESS: ${SALSA_MAIL_FROM_ADDRESS:-no-reply@example.com}
+    MAIL_FROM_NAME: ${SALSA_MAIL_FROM_NAME:-Salsa Apparel}
+    MAIL_HOST: ${SALSA_MAIL_HOST:-}
+    MAIL_PORT: ${SALSA_MAIL_PORT:-587}
+    MAIL_USERNAME: ${SALSA_MAIL_USERNAME:-}
+    MAIL_PASSWORD: ${SALSA_MAIL_PASSWORD:-}
+    PAYMENT_PROVIDER: midtrans
+    MIDTRANS_SERVER_KEY: ${SALSA_MIDTRANS_SERVER_KEY:-}
+    MIDTRANS_CLIENT_KEY: ${SALSA_MIDTRANS_CLIENT_KEY:-}
+    MIDTRANS_IS_PRODUCTION: ${SALSA_MIDTRANS_IS_PRODUCTION:-false}
     DB_HOST: db
     DB_PORT: "5432"
-    DB_DATABASE: ${DB_DATABASE:-salsa_apparel}
-    DB_USERNAME: ${DB_USERNAME:-salsa_app}
-    DB_PASSWORD: ${DB_PASSWORD:?Isi DB_PASSWORD di docker/.env dan gunakan --env-file docker/.env}
+    DB_DATABASE: ${SALSA_DB_DATABASE:-salsa_apparel}
+    DB_USERNAME: ${SALSA_DB_USERNAME:-salsa_app}
+    DB_PASSWORD: ${SALSA_DB_PASSWORD:-salsa_local_development}
 
 services:
   db:
     image: postgres:17-bookworm
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_DATABASE:-salsa_apparel}
-      POSTGRES_USER: ${DB_USERNAME:-salsa_app}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?Isi DB_PASSWORD di docker/.env dan gunakan --env-file docker/.env}
+      POSTGRES_DB: ${SALSA_DB_DATABASE:-salsa_apparel}
+      POSTGRES_USER: ${SALSA_DB_USERNAME:-salsa_app}
+      POSTGRES_PASSWORD: ${SALSA_DB_PASSWORD:-salsa_local_development}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -34,7 +48,7 @@ services:
   migrate:
     <<: *app
     restart: "no"
-    command: ["php", "scripts/migrate.php"]
+    command: ["sh", "-c", "php scripts/migrate.php && php scripts/seed.php"]
     depends_on:
       db:
         condition: service_healthy
@@ -53,12 +67,13 @@ services:
 
   web:
     image: salsa-apparel-nginx:local
+    pull_policy: build
     build:
       context: .
       target: web
     restart: unless-stopped
     ports:
-      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8080}:80"
+      - "${SALSA_HTTP_BIND:-127.0.0.1}:${SALSA_HTTP_PORT:-8080}:80"
     volumes:
       - uploads:/var/www/html/public/uploads:ro
     depends_on:
